@@ -1,0 +1,20 @@
+FROM nginx
+
+RUN mkdir -p /tmp/frontend
+WORKDIR /tmp/frontend
+COPY backend ./
+ 
+RUN apt update && \
+    apt remove -y python2 && \
+    apt install -y python3 pip && \
+    grep -v "psycopg2" requirements.txt > requirements.new && \
+    pip install --no-cache-dir -r requirements.new
+     
+RUN python3 manage.py collectstatic --noinput && \
+    cd staticfiles && \
+    mv * /usr/share/nginx/html/ && \
+    cd /tmp && rm -rf frontend
+ 
+WORKDIR /usr/share/nginx/html/
+ 
+COPY nginx.backend.static.conf /etc/nginx/nginx.conf

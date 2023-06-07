@@ -1,0 +1,62 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+ENV['VAGRANT_NO_PARALLEL'] = 'yes'
+
+CLUSTER_NAME        = "Kubernetes Cluster"
+VAGRANT_BOX         = "generic/ubuntu2204"
+CPUS_MASTER_NODE    = 2
+CPUS_WORKER_NODE    = 2
+MEMORY_MASTER_NODE  = 4096
+MEMORY_WORKER_NODE  = 2048
+MASTER_NODES_COUNT  = 1
+WORKER_NODES_COUNT  = 1
+
+
+Vagrant.configure(2) do |config|
+
+  config.vm.box = VAGRANT_BOX
+  config.vm.box_check_update = false
+  
+  # Kubernetes Master Server  
+  (1..MASTER_NODES_COUNT).each do |i|
+    config.vm.define "kmaster#{i}" do |master|
+      master.vm.hostname = "kmaster#{i}.example.com"
+      master.vm.network "public_network",:bridge => "Intel(R) Wi-Fi 6 AX201 160MHz", type: "dhcp"
+      master.vm.network "private_network", ip: "172.168.29.7#{i}", insecure: true  # Set the private network IP for the master node
+      master.vm.network "forwarded_port", guest: 22, host: "#{2710 + i}", id: "ssh", insecure: true
+      master.vm.provider "virtualbox" do |v|
+          v.name    = "kmaster#{i}"
+          v.cpus    = CPUS_MASTER_NODE
+          v.memory  = MEMORY_MASTER_NODE
+          v.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+          v.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+        end
+      # master.vm.provision 'shell', reboot: true
+      # master.vm.provision "shell", path: "bootstrap.sh", privileged: true
+      # master.vm.provision "shell", path: "bootstrap_kmaster.sh", privileged: true
+    end
+  end
+
+
+  # Kubernetes Worker Nodes
+  (1..WORKER_NODES_COUNT).each do |i|
+    config.vm.define "kworker#{i}" do |worker|
+      worker.vm.hostname = "kworker#{i}.example.com"  # Set the hostname for the worker node
+      worker.vm.network "public_network",:bridge => "Intel(R) Wi-Fi 6 AX201 160MHz", type: "dhcp"
+      worker.vm.network "private_network", ip: "172.168.29.8#{i}", insecure: true  # Set the private network IP for the worker node
+      worker.vm.network "forwarded_port", guest: 22, host: "#{2720 + i}", id: "ssh", insecure: true
+      worker.vm.provider "virtualbox" do |hv|
+        hv.name = "kworker#{i}"
+        hv.cpus =  CPUS_WORKER_NODE # Set the desired CPU count for the worker node
+        hv.memory = MEMORY_WORKER_NODE  # Set the desired memory size (in MB) for the worker node
+        hv.customize ["modifyvm", :id, "--nicpromisc3", "allow-all"]
+        hv.customize ["modifyvm", :id, "--nicpromisc2", "allow-all"]
+      end
+      # worker.vm.provision 'shell', reboot: true
+      # worker.vm.provision "shell", path: "bootstrap.sh", privileged: true
+      # worker.vm.provision "shell", path: "bootstrap_kworker.sh", privileged: true
+    end
+  end
+
+end
