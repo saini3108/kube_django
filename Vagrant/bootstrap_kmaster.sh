@@ -13,8 +13,9 @@ sudo kubeadm init --apiserver-advertise-address=172.168.29.71 --apiserver-cert-e
 echo "[TASK 3] Set up the kubeconfig for the vagrant user"
 sudo mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo cp -i /etc/kubernetes/admin.conf /media/sf_vm/config
+sudo cp -i /etc/kubernetes/admin.conf /media/sf_kube_django/vm/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
+sudo chown $(id -u):$(id -g) /media/sf_kube_django/vm/config
 
 # Save Configs to shared /Vagrant location
 # For Vagrant re-runs, check if there is existing configs in the location and delete it for saving new configuration.
@@ -24,25 +25,25 @@ if [ -d $config_path ]; then
 else
   mkdir -p $config_path
 fi
-cp -i /etc/kubernetes/admin.conf $config_path/config
-touch $config_path/join.sh
+sudo cp -i /etc/kubernetes/admin.conf $config_path/config
+sudo touch $config_path/join.sh
 chmod +x $config_path/join.sh
 kubeadm token create --print-join-command > $config_path/join.sh
 
 echo "[TASK 5] Deploy Calico network"
-printf "\n185.199.108.133 raw.githubusercontent.com\n\n" >> /etc/hosts
-### edit>>>>>>> sudo nano /etc/hosts
-### add>>>>>>>> 185.199.108.133 raw.githubusercontent.com
 sudo curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml -O
 sudo kubectl apply -f calico.yaml
 
 echo "add dashboard"
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
 kubectl -n kubernetes-dashboard patch service kubernetes-dashboard --type='json' -p='[{"op": "replace", "path": "/spec/type", "value": "NodePort"}]'
-echo "https://$(hostname -I | awk '{print $3}'):$(kubectl -n $NAMESPACE get service $SERVICE_NAME -o jsonpath='{.spec.ports[0].nodePort}')" > /media/sf_vm/dashboard_url
+echo "https://$(hostname -I | awk '{print $3}'):$(kubectl get service -n kubernetes-dashboard kubernetes-dashboard -o jsonpath='{.spec.ports[0].nodePort}')" > /media/sf_kube_django/vm/dashboard_url
 kubectl create serviceaccount admin-user -n kubernetes-dashboard
 kubectl create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:admin-user
-kubectl -n kubernetes-dashboard create token admin-user > /media/sf_vm/dashboard_token
+kubectl -n kubernetes-dashboard create token admin-user > /media/sf_kube_django/vm/dashboard_token
+
+echo "create namespace"
+sudo kubectl create namespace rdbw-prod
 
 sudo apt autoremove
 sudo apt clean

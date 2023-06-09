@@ -1,0 +1,11 @@
+FROM postgres:latest
+
+# Set environment variables
+ENV POSTGRES_USER=vikas
+ENV POSTGRES_PASSWORD=supersecretpasswordhere
+
+# Copy custom initialization scripts
+# COPY init-scripts/ /docker-entrypoint-initdb.d/
+
+# Expose the default PostgreSQL port
+EXPOSE 5432

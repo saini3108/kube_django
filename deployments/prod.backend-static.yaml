@@ -19,12 +19,15 @@ spec:
     spec:
       containers:
         - name: rdbw-backend-static
-          image: nxufkehscig5mqw9cdnbvur.azurecr.io/rdbw-backend-static:129
+          image:  rdbw-backend-static:latest
           imagePullPolicy: Always
           resources:
+            limits:
+              cpu: "2"
+              memory: "10Gi"
             requests:
-              cpu: 100m
-              memory: 100Mi
+              cpu: "1"
+              memory: "5Gi"
           ports:
             - containerPort: 80
 ---

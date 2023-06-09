@@ -19,52 +19,61 @@ spec:
     spec:
       containers:
         - name: rdbw-backend
-          image: nxufkehscig5mqw9cdnbvur.azurecr.io/rdbw-backend:129
+          image: rdbw-backend:latest
           imagePullPolicy: Always
           resources:
+            limits:
+              cpu: "2"
+              memory: "10Gi"
             requests:
-              cpu: 100m
-              memory: 100Mi
+              cpu: "1"
+              memory: "5Gi"
           ports:
             - containerPort: 8000
           volumeMounts:
-            - name: secrets-store-inline
-              mountPath: "/mnt/secrets-store"
-              readOnly: true
+            - name: rdbw-backend-data
+              mountPath: /vol/web
           env:
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: django
+                  key: secret  
             - name: DJANGO_WEB_SITE_NAME
               value: React Django Template Web Site
             - name: DJANGO_VERIFICATION_URL
-              value: https://www.rdbw.cybersmith.io/verifyEmail/
+              value: http://localhost:3000/user_email_verify/
             - name: DJANGO_RESET_PASSWORD_URL
-              value: https://www.rdbw.cybersmith.io/resetPassword/
+              value: http://localhost:3000/reset_password/
             - name: DJANGO_EMAIL_HOST
-              value: smtp.office365.com
+              value: smtp.gmail.com
             - name: DJANGO_EMAIL_PORT
               value: "587"
             - name: DJANGO_ALLOWED_HOSTS
-              value: "api.rdbw.cybersmith.io"
+              value: '127.0.0.1,localhost'
             - name: DJANGO_CORS_ALLOWED_ORIGINS
-              value: "https://www.rdbw.cybersmith.io"
+              value: "http://localhost:3000"
             - name: DJANGO_EXTERNAL_DB
               value: "True"
             - name: DJANGO_STATIC_URL
-              value: https://static.api.rdbw.cybersmith.io/              
+              value: http://localhost:3000              
             - name: POSTGRESQL_DBNAME
               value: "rdbw-prod"
             - name: POSTGRESQL_USER
-              value: "jsmith"
+              value: "vikas"
             - name: POSTGRESQL_HOST
-              value: "c567146eec4f.private.postgres.database.azure.com"
+              value: django-postgres
             - name: POSTGRESQL_PORT
-              value: "5432"              
+              value: "5432"      
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: password           
       volumes:
-        - name: secrets-store-inline
-          csi:
-            driver: secrets-store.csi.k8s.io
-            readOnly: true
-            volumeAttributes:
-              secretProviderClass: "azure-keyvault-sync"
+        - name: rdbw-backend-data
+          persistentVolumeClaim:
+            claimName: rdbw-backend-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -72,10 +81,23 @@ metadata:
   name: rdbw-backend-cluster-service
   namespace: rdbw-prod
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - port: 80
       targetPort: 8000
   selector:
     app: rdbw-backend
     tier: backend
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rdbw-backend-pvc
+  labels:
+    app: rdbw
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

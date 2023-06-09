@@ -1,22 +1,20 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: rdbw-backend-admin-ingress
+  name: rdbw-db-ingress
   namespace: rdbw-prod
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
-  ingressClassName: internal-nginx
   rules:
-    - host: api.example.local
+    - host: localhost
       http:
         paths:
           - path: /(.*)
             pathType: Prefix
             backend:
               service:
-                name: rdbw-backend-admin-cluster-service
+                name: rdbw-db-cluster-service
                 port:
-                  number: 80
+                  number: 5432

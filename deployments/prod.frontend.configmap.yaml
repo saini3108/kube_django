@@ -6,5 +6,5 @@ metadata:
 data:
   config.js: |
     window._env_ = {
-      BACKEND_URL: "https://api.rdbw.cybersmith.io/",
+      BACKEND_URL: "localhost",
     };

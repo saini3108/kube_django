@@ -7,15 +7,13 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/rewrite-target: /$1
-    cert-manager.io/cluster-issuer: letsencrypt
 spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - www.rdbw.cybersmith.io
-    secretName: frontend-tls-secret
+    - localhost
   rules:
-    - host: www.rdbw.cybersmith.io
+    - host: localhost
       http:
         paths:
           - path: /(.*)

@@ -10,6 +10,8 @@ sudo systemctl disable --now ufw
 echo "[TASK 3] Enable and Load Kernel modules https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
 printf "\n172.168.29.71 kmaster1\n172.168.29.72 kmaster2\n172.168.29.73 kmaster3\n\n" >> /etc/hosts
 printf "\n172.168.29.81 kworker1\n172.168.29.82 kworker2\n172.168.29.83 kworker3\n\n" >> /etc/hosts
+printf "\n185.199.108.133 raw.githubusercontent.com\n\n" >> /etc/hosts
+printf "\n20.207.73.82 github.com\n\n" >> /etc/hosts
 printf "overlay\nbr_netfilter\n" >> /etc/modules-load.d/containerd.conf
 modprobe overlay
 modprobe br_netfilter
@@ -48,7 +50,7 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt-get update
-sudo apt-get install -y containerd.io
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 echo "[TASK 5.2] Install containerd runtime Configuring the systemd cgroup driver"
 sudo containerd config default > /etc/containerd/config.toml
@@ -56,6 +58,19 @@ sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/c
 sudo sed -i 's/snapshotter = "overlayfs"/snapshotter = "native"/' /etc/containerd/config.toml
 sudo systemctl restart containerd
 sudo systemctl enable containerd
+
+
+sudo wget --no-check-certificate https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.2/cri-dockerd-0.3.2.arm64.tgz
+sudo tar xvf cri-dockerd-0.3.2.arm64.tgz
+sudo mv ./cri-dockerd /usr/local/bin/
+sudo wget https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.service
+sudo wget https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/packaging/systemd/cri-docker.socket
+sudo sudo mv cri-docker.socket cri-docker.service /etc/systemd/system/
+sudo sudo sed -i -e 's,/usr/bin/cri-dockerd,/usr/local/bin/cri-dockerd,' /etc/systemd/system/cri-docker.service
+sudo systemctl daemon-reload
+sudo systemctl enable cri-docker.service
+sudo systemctl enable --now cri-docker.socket
+#sudo systemctl status cri-docker.socket
 
 echo "[TASK 6] Add apt repo for kubernetes"
 sudo apt-get update

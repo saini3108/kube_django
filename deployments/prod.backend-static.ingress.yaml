@@ -10,7 +10,7 @@ metadata:
 spec:
   ingressClassName: internal-nginx
   rules:
-    - host: static.api.example.local
+    - host: localhost
       http:
         paths: 
           - path: /(.*)

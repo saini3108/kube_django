@@ -1,0 +1,80 @@
+# apiVersion: v1
+# kind: PersistentVolumeClaim
+# metadata:
+#   name: rdbw-db-pvc
+#   namespace: rdbw-prod
+#   labels:
+#     app: rdbw
+# spec:
+#   accessModes:
+#     - ReadWriteOnce
+#   resources:
+#     requests:
+#       storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rdbw-db
+  namespace: rdbw-prod
+  labels:
+    app: rdbw
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rdbw-db
+      tier: db
+  template:
+    metadata:
+      labels:
+        app: rdbw-db
+        tier: db
+    spec:
+      # volumes:
+      #   - name: rdbw-db-data
+      #     persistentVolumeClaim:
+      #       claimName: rdbw-db-pvc
+      containers:
+        - name: rdbw-db
+          image: postgres:latest
+          
+          resources:
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+            requests:
+              cpu: "1"
+              memory: "2Gi"
+          ports:
+            - containerPort: 5432
+              name: db
+          imagePullPolicy: IfNotPresent
+          # volumeMounts:
+          #   - name: rdbw-db-data
+          #     mountPath: /var/lib/postgresql/data
+          env:
+            - name: POSTGRES_DB
+              value: djangodb
+            - name: POSTGRES_USER
+              value: vikas
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-password
+                  key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rdbw-db-cluster-service
+  namespace: rdbw-prod
+  labels:
+    app: rdbw
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+  selector:
+    app: rdbw-db
+    tier: db
